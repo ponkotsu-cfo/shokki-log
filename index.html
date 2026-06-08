@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>食記ログ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --green: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #d8f3dc;
+    --green-soft: #b7e4c7;
+    --bg: #f8faf9;
+    --surface: #ffffff;
+    --border: #e0ede6;
+    --text: #1b2e24;
+    --text-muted: #6b8f76;
+    --snack: #e76f51;
+    --radius: 16px;
+    --shadow: 0 2px 12px rgba(45,106,79,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-logo {
+    width: 32px; height: 32px;
+    background: var(--green);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.03em;
+  }
+  .header-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Tab content */
+  .tab-content { display: none; padding: 20px 16px; }
+  .tab-content.active { display: block; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 200;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-btn {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 10px 0;
+    background: none; border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: color 0.2s;
+    gap: 4px;
+  }
+  .nav-btn.active { color: var(--green); }
+  .nav-icon { font-size: 22px; line-height: 1; }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+  }
+
+  /* Form elements */
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  input[type="datetime-local"],
+  textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="datetime-local"]:focus,
+  textarea:focus { border-color: var(--green-light); }
+  textarea { resize: none; height: 72px; }
+
+  .content-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .content-input:focus { border-color: var(--green-light); }
+
+  /* Toggle button group */
+  .toggle-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle-btn {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+  .toggle-btn.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
+  /* Snack toggle */
+  .snack-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .snack-toggle.on {
+    background: #fff3f0;
+    border-color: var(--snack);
+  }
+  .snack-icon { font-size: 24px; }
+  .snack-text { flex: 1; }
+  .snack-text strong { display: block; font-size: 14px; }
+  .snack-text span { font-size: 12px; color: var(--text-muted); }
+  .snack-indicator {
+    width: 44px; height: 26px;
+    background: var(--border);
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .snack-toggle.on .snack-indicator { background: var(--snack); }
+  .snack-indicator::after {
+    content: '';
+    width: 20px; height: 20px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px; left: 3px;
+    transition: left 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .snack-toggle.on .snack-indicator::after { left: 21px; }
+
+  /* Mood selector */
+  .mood-group { display: flex; gap: 12px; }
+  .mood-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .mood-btn span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .mood-btn.active { border-color: var(--green-light); background: var(--green-pale); }
+
+  /* Save button */
+  .save-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.05em;
+  }
+  .save-btn:active { background: var(--green-light); transform: scale(0.98); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 90px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* History tab */
+  .date-nav {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .date-nav input[type="date"] {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+  }
+  .date-arrow {
+    width: 40px; height: 40px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; color: var(--text-muted);
+  }
+
+  /* Log items */
+  .log-item {
+    display: flex; gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    min-width: 42px;
+    padding-top: 2px;
+  }
+  .log-body { flex: 1; }
+  .log-content { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+  .log-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .tag-snack { background: #fff3f0; color: var(--snack); }
+  .tag-alcohol { background: #ede9fe; color: #6d28d9; }
+  .tag-mood { background: var(--green-pale); color: var(--green); }
+  .log-comment { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+  .log-delete {
+    background: none; border: none;
+    color: var(--border); font-size: 18px;
+    cursor: pointer; padding: 4px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .log-delete:hover { color: #e63946; }
+
+  /* Timeline */
+  .timeline-wrap {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin: 0 -4px;
+  }
+  .timeline {
+    min-width: 600px;
+    height: 80px;
+    position: relative;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 0 8px;
+  }
+  .timeline-axis {
+    position: absolute;
+    bottom: 18px; left: 8px; right: 8px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .timeline-label {
+    position: absolute;
+    bottom: 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    transform: translateX(-50%);
+  }
+  .timeline-dot {
+    position: absolute;
+    bottom: 26px;
+    width: 10px; height: 10px;
+    background: var(--green);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    transition: transform 0.15s;
+  }
+  .timeline-dot.snack { background: var(--snack); }
+  .timeline-dot:hover { transform: translateX(-50%) scale(1.4); }
+  .timeline-dot-label {
+    position: absolute;
+    bottom: 40px;
+    font-size: 10px;
+    background: var(--text);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .timeline-dot:hover + .timeline-dot-label { opacity: 1; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* Summary tab */
+  .period-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+  .period-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--text-muted);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .period-btn.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--green);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.1;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .bar-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .bar-label { font-size: 13px; min-width: 50px; }
+  .bar-track {
+    flex: 1; height: 10px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--green-light);
+    border-radius: 999px;
+    transition: width 0.5s ease;
+  }
+  .bar-count { font-size: 13px; color: var(--text-muted); font-family: 'DM Mono', monospace; min-width: 24px; text-align: right; }
+
+  .export-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--surface);
+    color: var(--green);
+    border: 2px solid var(--green);
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .export-btn:active { background: var(--green-pale); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-logo">🌿</div>
+  <h1>食記ログ</h1>
+  <span class="header-sub" id="todayDate"></span>
+</header>
+
+<!-- 記録タブ -->
+<div class="tab-content active" id="tab-record">
+  <div class="card">
+    <div class="card-title">✏️ 今の食事を記録</div>
+
+    <div class="field">
+      <label>📅 日時</label>
+      <input type="datetime-local" id="inputDatetime">
+    </div>
+
+    <div class="field">
+      <label>🍽️ 食べた内容</label>
+      <input class="content-input" type="text" id="inputContent" placeholder="例：ご飯・味噌汁・焼き魚">
+    </div>
+
+    <div class="field">
+      <label>🍬 間食？</label>
+      <div class="snack-toggle" id="snackToggle" onclick="toggleSnack()">
+        <span class="snack-icon">🍫</span>
+        <div class="snack-text">
+          <strong id="snackLabel">間食ではない</strong>
+          <span>タップで切り替え</span>
+        </div>
+        <div class="snack-indicator"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>🍺 お酒の量</label>
+      <div class="toggle-group" id="alcoholGroup">
+        <button class="toggle-btn active" data-val="なし" onclick="selectAlcohol(this)">なし</button>
+        <button class="toggle-btn" data-val="少し" onclick="selectAlcohol(this)">少し</button>
+        <button class="toggle-btn" data-val="普通" onclick="selectAlcohol(this)">普通</button>
+        <button class="toggle-btn" data-val="多め" onclick="selectAlcohol(this)">多め</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>😊 気分</label>
+      <div class="mood-group" id="moodGroup">
+        <button class="mood-btn active" data-val="😊" onclick="selectMood(this)">😊<span>良い</span></button>
+        <button class="mood-btn" data-val="😐" onclick="selectMood(this)">😐<span>普通</span></button>
+        <button class="mood-btn" data-val="😔" onclick="selectMood(this)">😔<span>しんどい</span></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>💬 コメント（任意）</label>
+      <textarea id="inputComment" placeholder="食べた場所、体調など…"></textarea>
+    </div>
+
+    <button class="save-btn" onclick="saveRecord()">💾 記録する</button>
+  </div>
+</div>
+
+<!-- 履歴タブ -->
+<div class="tab-content" id="tab-history">
+  <div class="date-nav">
+    <button class="date-arrow" onclick="changeDate(-1)">◀</button>
+    <input type="date" id="historyDate" onchange="renderHistory()">
+    <button class="date-arrow" onclick="changeDate(1)">▶</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⏱️ タイムライン</div>
+    <div class="timeline-wrap">
+      <div class="timeline" id="timeline">
+        <div class="timeline-axis"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 記録リスト</div>
+    <div id="logList"></div>
+  </div>
+</div>
+
+<!-- サマリタブ -->
+<div class="tab-content" id="tab-summary">
+  <div class="period-toggle">
+    <button class="period-btn active" onclick="selectPeriod('week', this)">今週</button>
+    <button class="period-btn" onclick="selectPeriod('lastweek', this)">先週</button>
+    <button class="period-btn" onclick="selectPeriod('month', this)">今月</button>
+  </div>
+
+  <div class="stat-grid" id="statGrid"></div>
+
+  <div class="card">
+    <div class="card-title">🍺 酒量内訳</div>
+    <div id="alcoholChart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">😊 気分内訳</div>
+    <div id="moodChart"></div>
+  </div>
+
+  <button class="export-btn" onclick="exportCSV()">📥 CSVエクスポート（全データ）</button>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchTab('record', this)">
+    <span class="nav-icon">✏️</span>記録
+  </button>
+  <button class="nav-btn" onclick="switchTab('history', this)">
+    <span class="nav-icon">📋</span>履歴
+  </button>
+  <button class="nav-btn" onclick="switchTab('summary', this)">
+    <span class="nav-icon">📊</span>サマリ
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'shokki_logs';
+let currentPeriod = 'week';
+let snackOn = false;
+let selectedAlcohol = 'なし';
+let selectedMood = '😊';
+
+// --- Init ---
+function init() {
+  const now = new Date();
+  document.getElementById('todayDate').textContent = now.toLocaleDateString('ja-JP', {month:'short', day:'numeric', weekday:'short'});
+  document.getElementById('inputDatetime').value = toLocalISOString(now).slice(0,16);
+  const today = toDateString(now);
+  document.getElementById('historyDate').value = today;
+  renderHistory();
+  renderSummary();
+}
+
+function toLocalISOString(d) {
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString();
+}
+function toDateString(d) {
+  return toLocalISOString(d).slice(0,10);
+}
+
+// --- Storage ---
+function getLogs() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+}
+function saveLogs(logs) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+}
+
+// --- Tab ---
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'history') renderHistory();
+  if (name === 'summary') renderSummary();
+}
+
+// --- Form controls ---
+function toggleSnack() {
+  snackOn = !snackOn;
+  const el = document.getElementById('snackToggle');
+  const label = document.getElementById('snackLabel');
+  el.classList.toggle('on', snackOn);
+  label.textContent = snackOn ? '間食！' : '間食ではない';
+}
+function selectAlcohol(btn) {
+  document.querySelectorAll('#alcoholGroup .toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedAlcohol = btn.dataset.val;
+}
+function selectMood(btn) {
+  document.querySelectorAll('#moodGroup .mood-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedMood = btn.dataset.val;
+}
+
+// --- Save ---
+function saveRecord() {
+  const content = document.getElementById('inputContent').value.trim();
+  if (!content) { showToast('食べた内容を入力してください'); return; }
+  const dt = document.getElementById('inputDatetime').value;
+  if (!dt) { showToast('日時を入力してください'); return; }
+
+  const log = {
+    id: Date.now().toString(),
+    datetime: dt,
+    content,
+    is_snack: snackOn,
+    alcohol: selectedAlcohol,
+    mood: selectedMood,
+    comment: document.getElementById('inputComment').value.trim()
+  };
+
+  const logs = getLogs();
+  logs.push(log);
+  saveLogs(logs);
+  showToast('✅ 記録しました！');
+
+  // Reset
+  document.getElementById('inputContent').value = '';
+  document.getElementById('inputComment').value = '';
+  snackOn = false;
+  document.getElementById('snackToggle').classList.remove('on');
+  document.getElementById('snackLabel').textContent = '間食ではない';
+  selectedAlcohol = 'なし';
+  document.querySelectorAll('#alcoholGroup .toggle-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('#alcoholGroup .toggle-btn[data-val="なし"]').classList.add('active');
+  selectedMood = '😊';
+  document.querySelectorAll('#moodGroup .mood-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('#moodGroup .mood-btn[data-val="😊"]').classList.add('active');
+
+  // 次の記録用に日時更新
+  const now = new Date();
+  document.getElementById('inputDatetime').value = toLocalISOString(now).slice(0,16);
+}
+
+// --- History ---
+function changeDate(delta) {
+  const d = new Date(document.getElementById('historyDate').value + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  document.getElementById('historyDate').value = toDateString(d);
+  renderHistory();
+}
+
+function renderHistory() {
+  const date = document.getElementById('historyDate').value;
+  const logs = getLogs().filter(l => l.datetime.startsWith(date)).sort((a,b) => a.datetime.localeCompare(b.datetime));
+
+  // Timeline
+  const timeline = document.getElementById('timeline');
+  // Clear existing dots/labels
+  timeline.querySelectorAll('.timeline-dot, .timeline-dot-label, .timeline-label').forEach(e => e.remove());
+
+  const hours = [0, 6, 12, 18, 24];
+  hours.forEach(h => {
+    const pct = h / 24 * 100;
+    const lbl = document.createElement('div');
+    lbl.className = 'timeline-label';
+    lbl.style.left = `calc(${pct}% )`;
+    lbl.textContent = h === 24 ? '' : h + '時';
+    timeline.appendChild(lbl);
+  });
+
+  logs.forEach(log => {
+    const t = new Date(log.datetime);
+    const mins = t.getHours() * 60 + t.getMinutes();
+    const pct = mins / (24 * 60) * 100;
+    const dot = document.createElement('div');
+    dot.className = 'timeline-dot' + (log.is_snack ? ' snack' : '');
+    dot.style.left = `calc(${pct}%)`;
+    const lbl2 = document.createElement('div');
+    lbl2.className = 'timeline-dot-label';
+    lbl2.style.left = `calc(${pct}%)`;
+    lbl2.textContent = `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')} ${log.content.slice(0,8)}`;
+    timeline.appendChild(dot);
+    timeline.appendChild(lbl2);
+  });
+
+  // List
+  const list = document.getElementById('logList');
+  if (logs.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🍽️</div>この日の記録はありません</div>`;
+    return;
+  }
+  list.innerHTML = logs.map(log => {
+    const t = new Date(log.datetime);
+    const timeStr = `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`;
+    const tags = [];
+    if (log.is_snack) tags.push(`<span class="tag tag-snack">🍬 間食</span>`);
+    if (log.alcohol !== 'なし') tags.push(`<span class="tag tag-alcohol">🍺 ${log.alcohol}</span>`);
+    tags.push(`<span class="tag tag-mood">${log.mood}</span>`);
+    return `
+      <div class="log-item">
+        <div class="log-time">${timeStr}</div>
+        <div class="log-body">
+          <div class="log-content">${escHtml(log.content)}</div>
+          <div class="log-tags">${tags.join('')}</div>
+          ${log.comment ? `<div class="log-comment">💬 ${escHtml(log.comment)}</div>` : ''}
+        </div>
+        <button class="log-delete" onclick="deleteLog('${log.id}')">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function deleteLog(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  const logs = getLogs().filter(l => l.id !== id);
+  saveLogs(logs);
+  renderHistory();
+  showToast('🗑️ 削除しました');
+}
+
+// --- Summary ---
+function selectPeriod(period, btn) {
+  currentPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSummary();
+}
+
+function getPeriodLogs() {
+  const now = new Date();
+  const logs = getLogs();
+  let start, end;
+
+  if (currentPeriod === 'week') {
+    const day = now.getDay();
+    start = new Date(now); start.setDate(now.getDate() - day); start.setHours(0,0,0,0);
+    end = new Date(now);
+  } else if (currentPeriod === 'lastweek') {
+    const day = now.getDay();
+    end = new Date(now); end.setDate(now.getDate() - day - 1); end.setHours(23,59,59,999);
+    start = new Date(end); start.setDate(end.getDate() - 6); start.setHours(0,0,0,0);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now);
+  }
+
+  return logs.filter(l => {
+    const d = new Date(l.datetime);
+    return d >= start && d <= end;
+  });
+}
+
+function renderSummary() {
+  const logs = getPeriodLogs();
+  const days = new Set(logs.map(l => l.datetime.slice(0,10))).size;
+  const snackCount = logs.filter(l => l.is_snack).length;
+  const alcoholDays = new Set(logs.filter(l => l.alcohol !== 'なし').map(l => l.datetime.slice(0,10))).size;
+  const snackRate = logs.length ? Math.round(snackCount / logs.length * 100) : 0;
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${days}</div><div class="stat-label">記録日数</div></div>
+    <div class="stat-card"><div class="stat-value">${logs.length}</div><div class="stat-label">総記録数</div></div>
+    <div class="stat-card"><div class="stat-value">${snackCount}</div><div class="stat-label">間食回数</div></div>
+    <div class="stat-card"><div class="stat-value">${alcoholDays}</div><div class="stat-label">飲酒日数</div></div>
+  `;
+
+  // Alcohol chart
+  const alcVals = ['少し', '普通', '多め'];
+  const alcCounts = alcVals.map(v => logs.filter(l => l.alcohol === v).length);
+  const alcMax = Math.max(...alcCounts, 1);
+  document.getElementById('alcoholChart').innerHTML = alcVals.map((v, i) => `
+    <div class="bar-row">
+      <div class="bar-label">🍺 ${v}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${alcCounts[i]/alcMax*100}%"></div></div>
+      <div class="bar-count">${alcCounts[i]}</div>
+    </div>
+  `).join('') + `<div class="bar-row"><div class="bar-label">なし</div><div class="bar-track"><div class="bar-fill" style="width:${logs.filter(l=>l.alcohol==='なし').length/Math.max(logs.length,1)*100}%"></div></div><div class="bar-count">${logs.filter(l=>l.alcohol==='なし').length}</div></div>`;
+
+  // Mood chart
+  const moods = ['😊', '😐', '😔'];
+  const moodLabels = ['良い', '普通', 'しんどい'];
+  const moodCounts = moods.map(m => logs.filter(l => l.mood === m).length);
+  const moodMax = Math.max(...moodCounts, 1);
+  document.getElementById('moodChart').innerHTML = moods.map((m, i) => `
+    <div class="bar-row">
+      <div class="bar-label">${m} ${moodLabels[i]}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${moodCounts[i]/moodMax*100}%"></div></div>
+      <div class="bar-count">${moodCounts[i]}</div>
+    </div>
+  `).join('');
+}
+
+// --- CSV Export ---
+function exportCSV() {
+  const logs = getLogs();
+  if (logs.length === 0) { showToast('記録がありません'); return; }
+  const header = 'id,datetime,content,is_snack,alcohol,mood,comment';
+  const rows = logs.map(l =>
+    [l.id, l.datetime, `"${l.content.replace(/"/g,'""')}"`, l.is_snack ? '1' : '0', l.alcohol, l.mood, `"${(l.comment||'').replace(/"/g,'""')}"`].join(',')
+  );
+  const csv = '\uFEFF' + [header, ...rows].join('\n');
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `shokki_log_${toDateString(new Date())}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 CSVをダウンロードしました');
+}
+
+// --- Helpers ---
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+init();
+</script>
+</body>
+</html>
